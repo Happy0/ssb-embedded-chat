@@ -1,0 +1,20 @@
+{
+  "name": "ssb-embedded-chat",
+  "version": "1.0.0",
+  "description": "A small widget for private chats between two people conducted via scuttlebutt. I will be using this for a game chat box for ssb-chess.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://www.github.com/happy0/ssb-embedded-chat"
+  },
+  "dependencies": {
+    "hyperscript": "2.0.2",
+    "pull-scroll" : "1.0.9",
+    "pull-stream": "3.6.0"
+  },
+  "author": "Gordon Martin",
+  "license": "GPL-3.0"
+}
