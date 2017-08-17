@@ -1,7 +1,7 @@
 const pull = require('pull-stream');
 const Scroller = require('pull-scroll')
 
-// TODO: maist hings
+// TODO: hings
 module.exports = (sbot, config) => {
 
   // The root message that all the chat messages are linked back to
@@ -15,12 +15,14 @@ module.exports = (sbot, config) => {
   const chatMessageField = config.chatMessageField;
 
   function messagesSource() {
-    var messageByType = sbot.messagesByType({
-      type: chatMessageType,
+    var linksFromRootMessage = sbot.links({
+      dest: rootMessageId,
       live: true
     });
 
-    return messageByType;
+    var typeFilter = pull.filter(msg => msg.value.content.type === chatMessageType);
+
+    return pull(linksFromRootMessage, typeFilter);
   }
 
   function renderChatMessage(msg, author) {
@@ -41,7 +43,11 @@ module.exports = (sbot, config) => {
       }
     }, content);
 
-    pull(messagesSource(), Scroller(scroller, msg.value.content[chatMessageField], (msg) => renderChatMessage(msg, msg.value.author) ));
+    pull(
+      messagesSource(),
+      Scroller(scroller,
+        msg.value.content[chatMessageField], (msg) => renderChatMessage(msg, msg.value.author)
+      ));
 
     return scroller;
   }
