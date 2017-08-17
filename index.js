@@ -8,22 +8,55 @@ module.exports = (sbot, config) => {
   const rootMessageId = config.rootMessageId;
 
   // The chat root message type to identify chat messages that are linked
-  // to the root and send me chat messages
+  // to the root and send chat messages
   const chatMessageType = config.chatMessageType;
+
+  // The field name of the JSON key containing the message text.
+  const chatMessageField = config.chatMessageField;
+
+  function messagesSource() {
+    var messageByType = sbot.messagesByType({
+      type: chatMessageType,
+      live: true
+    });
+
+    return messageByType;
+  }
+
+  function renderChatMessage(msg, author) {
+    return h('div', author + ": " + msg);
+  }
 
   /**
    * Return the scroller HTML DOM element that the consuming code
    * can attach to the DOM somewhere.
    */
   function getScrollerElement() {
+    var content = h('div');
 
+    var scroller = h('div', {
+      class: 'ssb-embedded-chat-message',
+      style: {
+        'overflow-y': 'scroll'
+      }
+    }, content);
+
+    pull(messagesSource(), Scroller(scroller, msg.value.content[chatMessageField], (msg) => renderChatMessage(msg, msg.value.author) ));
+
+    return scroller;
   }
 
   /* Send the message using the configured message type and root message.
    *  Additionally, link the message to each of the given ids.
    */
-  function sendMessage(messageText, linkToMessageIds) {
+  function sendMessage(messageText, linkToMessageIds, cb) {
+    var content = {
+      type: chatMessageType
+    };
 
+    content[chatMessageField] = messageText;
+
+    sbot.publish(content, cb);
   }
 
   return {
