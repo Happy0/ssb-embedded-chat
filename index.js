@@ -1,5 +1,6 @@
+const h = require('hyperscript');
 const pull = require('pull-stream');
-const Scroller = require('pull-scroll')
+const Scroller = require('pull-scroll');
 
 // TODO: hings
 module.exports = (sbot, config) => {
