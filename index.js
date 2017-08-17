@@ -18,10 +18,11 @@ module.exports = (sbot, config) => {
   function messagesSource() {
     var linksFromRootMessage = sbot.links({
       dest: rootMessageId,
+      values: true,
       live: true
     });
 
-    var typeFilter = pull.filter(msg => msg.value.content.type === chatMessageType);
+    var typeFilter = pull.filter(msg => !msg.sync && msg.value.content.type === chatMessageType);
 
     return pull(linksFromRootMessage, typeFilter);
   }
@@ -46,8 +47,7 @@ module.exports = (sbot, config) => {
 
     pull(
       messagesSource(),
-      Scroller(scroller, (msg) => renderChatMessage(msg => msg.value.content[chatMessageField], msg.value.author)
-      ));
+      Scroller(scroller, (msg) => renderChatMessage(msg.value.content[chatMessageField], msg.value.author)));
 
     return scroller;
   }
