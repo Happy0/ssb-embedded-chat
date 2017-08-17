@@ -27,13 +27,27 @@ module.exports = (sbot, config) => {
       live: true
     });
 
+    var canSeeMessageFilter = pull.filter(msg =>{
+      if (msg.sync) return;
+
+      return !msg.sync &&
+      msg.value &&
+      typeof msg.value.content === 'string' &&
+      sbot.private.unbox(msg)
+    });
+
+    var unboxedMessageMap = pull.map(msg => msg = sbot.private.unbox(msg));
+    var unboxedMessagesThrough = pull(canSeeMessageFilter, unboxedMessageMap);
+
     var typeFilter = pull.filter(msg => !msg.sync && msg.value.content.type === chatMessageType);
 
-    return pull(linksFromRootMessage, typeFilter);
+    return pull(linksFromRootMessage, pull(unboxedMessagesThrough, typeFilter));
   }
 
   function renderChatMessage(msg, author) {
-    return h('div', {className: 'ssb-embedded-chat-message'}, `<${author}> ${msg}`);
+    return h('div', {
+      className: 'ssb-embedded-chat-message'
+    }, `<${author}> ${msg}`);
   }
 
   /**
@@ -43,7 +57,22 @@ module.exports = (sbot, config) => {
   function getChatboxElement() {
     var content = h('div');
 
-    var sendMessageBox = h('input', {className: 'ssb-embedded-chat-input-box'});
+    var keyPressHandler = (e) => {
+      if (e.charCode === 13) {
+        var messageText = e.srcElement.value;
+
+        if (messageText.length > 0) {
+          e.srcElement.value="";
+          sendMessage(messageText);
+        }
+
+      }
+    }
+
+    var sendMessageBox = h('input', {
+      onkeypress: keyPressHandler,
+      className: 'ssb-embedded-chat-input-box'
+    });
 
     var scroller = h('div', {
       className: 'ssb-embedded-chat-message',
@@ -62,15 +91,23 @@ module.exports = (sbot, config) => {
   /* Send the message using the configured message type and root message.
    *  Additionally, link the message to each of the given ids.
    */
-  function sendMessage(messageText, linkToMessageIds, cb) {
+  function sendMessage(messageText) {
     var content = {
       type: chatMessageType,
-      recps: recipients
     };
+
+    if (!recipients || recipients.length === 0) {
+      console.error("Chatbox: Recipients array must be configured.")
+      return;
+    }
 
     content[chatMessageField] = messageText;
 
-    sbot.private.publish(content, cb);
+    sbot.private.publish(content, recipients, (err, msg) => {
+      console.log("sending msg");
+      console.log(err);
+      console.log(msg);
+    });
   }
 
   return {
