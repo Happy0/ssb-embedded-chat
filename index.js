@@ -15,9 +15,6 @@ module.exports = (sbot, config) => {
   // The field name of the JSON key containing the message text.
   const chatMessageField = config.chatMessageField;
 
-  // The identity of the viewer
-  const myIdent = config.myIdent;
-
   /* The idents of those who should be able to see the chat message in the format
    * documented in https://ssbc.github.io/docs/scuttlebot/howto-publish-encrypted-messages.html
    * for the message recipients */
