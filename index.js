@@ -46,8 +46,7 @@ module.exports = (sbot, config) => {
 
     pull(
       messagesSource(),
-      Scroller(scroller,
-        msg.value.content[chatMessageField], (msg) => renderChatMessage(msg, msg.value.author)
+      Scroller(scroller, (msg) => renderChatMessage(msg => msg.value.content[chatMessageField], msg.value.author)
       ));
 
     return scroller;
