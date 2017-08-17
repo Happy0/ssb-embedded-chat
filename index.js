@@ -33,26 +33,28 @@ module.exports = (sbot, config) => {
   }
 
   function renderChatMessage(msg, author) {
-    return h('div', author + ": " + msg);
+    return h('div', {className: 'ssb-embedded-chat-message'}, author + ": " + msg);
   }
 
   /**
    * Return the scroller HTML DOM element that the consuming code
    * can attach to the DOM somewhere.
    */
-  function getScrollerElement() {
+  function getChatboxElement() {
     var content = h('div');
 
+    var sendMessageBox = h('input', {className: 'ssb-embedded-chat-input-box'});
+
     var scroller = h('div', {
-      class: 'ssb-embedded-chat-message',
+      className: 'ssb-embedded-chat-message',
       style: {
         'overflow-y': 'scroll'
       }
-    }, content);
+    }, content, sendMessageBox);
 
     pull(
       messagesSource(),
-      Scroller(scroller, (msg) => renderChatMessage(msg.value.content[chatMessageField], msg.value.author)));
+      Scroller(scroller, content, (msg) => renderChatMessage(msg.value.content[chatMessageField], msg.value.author)));
 
     return scroller;
   }
@@ -72,6 +74,6 @@ module.exports = (sbot, config) => {
   }
 
   return {
-    getScrollerElement: getScrollerElement
+    getChatboxElement: getChatboxElement
   }
 }
