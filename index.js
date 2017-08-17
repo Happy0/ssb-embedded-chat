@@ -15,6 +15,14 @@ module.exports = (sbot, config) => {
   // The field name of the JSON key containing the message text.
   const chatMessageField = config.chatMessageField;
 
+  // The identity of the viewer
+  const myIdent = config.myIdent;
+
+  /* The idents of those who should be able to see the chat message in the format
+   * documented in https://ssbc.github.io/docs/scuttlebot/howto-publish-encrypted-messages.html
+   * for the message recipients */
+  const recipients = config.recipients;
+
   function messagesSource() {
     var linksFromRootMessage = sbot.links({
       dest: rootMessageId,
@@ -57,16 +65,16 @@ module.exports = (sbot, config) => {
    */
   function sendMessage(messageText, linkToMessageIds, cb) {
     var content = {
-      type: chatMessageType
+      type: chatMessageType,
+      recps: recipients
     };
 
     content[chatMessageField] = messageText;
 
-    sbot.publish(content, cb);
+    sbot.private.publish(content, cb);
   }
 
   return {
-    getScrollerElement: getScrollerElement,
-    sendMessage: sendMessage
+    getScrollerElement: getScrollerElement
   }
 }
