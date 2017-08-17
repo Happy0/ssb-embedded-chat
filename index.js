@@ -33,7 +33,7 @@ module.exports = (sbot, config) => {
   }
 
   function renderChatMessage(msg, author) {
-    return h('div', {className: 'ssb-embedded-chat-message'}, author + ": " + msg);
+    return h('div', {className: 'ssb-embedded-chat-message'}, `<${author}> ${msg}`);
   }
 
   /**
