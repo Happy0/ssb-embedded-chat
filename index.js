@@ -19,9 +19,15 @@ module.exports = (sbot, config) => {
   // or not
   const chatboxEnabled = config.chatboxEnabled;
 
-  /* The idents of those who should be able to see the chat message in the format
-   * documented in https://ssbc.github.io/docs/scuttlebot/howto-publish-encrypted-messages.html
-   * for the message recipients */
+  /* The idents of those who should be able to see the chat message and their
+   * display names. Of format:
+   [
+    {
+      "name": "display name",
+      "id": <scuttlebut ident>
+    }
+  ]
+   */
   const recipients = config.recipients;
 
   function messagesSource() {
@@ -95,7 +101,7 @@ module.exports = (sbot, config) => {
 
     pull(
       messagesSource(),
-      Scroller(scroller, content, (msg) => renderChatMessage(msg.value.content[chatMessageField], msg.value.author)));
+      Scroller(scroller, content, (msg) => renderChatMessage(msg.value.content[chatMessageField], recipients[msg.value.author].name)));
 
     return scroller;
   }
@@ -116,7 +122,7 @@ module.exports = (sbot, config) => {
 
     content[chatMessageField] = messageText;
 
-    sbot.private.publish(content, recipients, (err, msg) => {
+    sbot.private.publish(content, Object.keys(recipients), (err, msg) => {
 
     });
   }
