@@ -38,7 +38,8 @@ module.exports = (sbot, config) => {
         msg.value.content = data;
         cb(null, msg);
       } else {
-        cb(null, null);
+        msg.value.content = {};
+        cb(null, msg);
       }
     }));
     var unboxedMessagesThrough = pull(encryptedMessagesOnlyThrough, unboxedMessageMap);
