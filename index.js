@@ -72,7 +72,9 @@ module.exports = (sbot, config) => {
    * can attach to the DOM somewhere.
    */
   function getChatboxElement() {
-    var content = h('div', {className: 'ssb-embedded-chat-messages'});
+    var content = h('div', {
+      className: 'ssb-embedded-chat-messages'
+    });
 
     var keyPressHandler = (e) => {
       if (e.charCode === 13) {
@@ -93,18 +95,23 @@ module.exports = (sbot, config) => {
     });
 
     var scroller = h('div', {
-      className: 'ssb-embedded-chat',
       style: {
         'overflow-y': 'auto',
         'overflow-x': 'hidden'
       }
-    }, content, sendMessageBox);
+    }, content);
 
     pull(
       messagesSource(),
-      Scroller(scroller, content, (msg) => renderChatMessage(msg.value.content[chatMessageField], recipients[msg.value.author].name)));
+      Scroller(scroller,
+        content,
+        (msg) => renderChatMessage(msg.value.content[chatMessageField], recipients[msg.value.author].name), false, true));
 
-    return scroller;
+    var chatBox = h('div', {
+      className: 'ssb-embedded-chat',
+    }, scroller, sendMessageBox)
+
+    return chatBox;
   }
 
   /* Send the message using the configured message type and root message.
