@@ -15,6 +15,10 @@ module.exports = (sbot, config) => {
   // The field name of the JSON key containing the message text.
   const chatMessageField = config.chatMessageField;
 
+  // Whether the user should be able to send messages in the chat box
+  // or not
+  const chatboxEnabled = config.chatboxEnabled;
+
   /* The idents of those who should be able to see the chat message in the format
    * documented in https://ssbc.github.io/docs/scuttlebot/howto-publish-encrypted-messages.html
    * for the message recipients */
@@ -78,7 +82,8 @@ module.exports = (sbot, config) => {
 
     var sendMessageBox = h('input', {
       onkeypress: keyPressHandler,
-      className: 'ssb-embedded-chat-input-box'
+      className: 'ssb-embedded-chat-input-box',
+      disabled: !chatboxEnabled
     });
 
     var scroller = h('div', {
