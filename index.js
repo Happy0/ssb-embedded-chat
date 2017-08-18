@@ -72,7 +72,7 @@ module.exports = (sbot, config) => {
    * can attach to the DOM somewhere.
    */
   function getChatboxElement() {
-    var content = h('div');
+    var content = h('div', {className: 'ssb-embedded-chat-messages'});
 
     var keyPressHandler = (e) => {
       if (e.charCode === 13) {
@@ -93,9 +93,10 @@ module.exports = (sbot, config) => {
     });
 
     var scroller = h('div', {
-      className: 'ssb-embedded-chat-message',
+      className: 'ssb-embedded-chat',
       style: {
-        'overflow-y': 'scroll'
+        'overflow-y': 'auto',
+        'overflow-x': 'hidden'
       }
     }, content, sendMessageBox);
 
