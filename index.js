@@ -73,7 +73,7 @@ module.exports = (sbot, config) => {
    */
   function getChatboxElement() {
     var content = h('div', {
-      className: 'ssb-embedded-chat-messages'
+
     });
 
     var keyPressHandler = (e) => {
@@ -98,7 +98,8 @@ module.exports = (sbot, config) => {
       style: {
         'overflow-y': 'auto',
         'overflow-x': 'hidden'
-      }
+      },
+      className: 'ssb-embedded-chat-messages'
     }, content);
 
     pull(

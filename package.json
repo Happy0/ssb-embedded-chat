@@ -1,6 +1,6 @@
 {
   "name": "ssb-embedded-chat",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A small widget for private chats between two people conducted via scuttlebutt. I will be using this for a game chat box for ssb-chess.",
   "main": "index.js",
   "scripts": {
