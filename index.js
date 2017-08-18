@@ -27,19 +27,25 @@ module.exports = (sbot, config) => {
       live: true
     });
 
-    var canSeeMessageFilter = pull.filter(msg =>{
-      if (msg.sync) return;
+    var encryptedMessagesOnlyThrough = pull.filter(msg => {
+      if (msg.sync) return false;
 
-      return !msg.sync &&
-      msg.value &&
-      typeof msg.value.content === 'string' &&
-      sbot.private.unbox(msg)
+      return typeof(msg.value.content) === 'string';
     });
 
-    var unboxedMessageMap = pull.map(msg => msg = sbot.private.unbox(msg));
-    var unboxedMessagesThrough = pull(canSeeMessageFilter, unboxedMessageMap);
+    var unboxedMessageMap = pull.asyncMap((msg, cb) => sbot.private.unbox(msg.value.content, (err, data) => {
+      if (data) {
+        msg.value.content = data;
+        cb(null, msg);
+      } else {
+        cb(null, null);
+      }
+    }));
+    var unboxedMessagesThrough = pull(encryptedMessagesOnlyThrough, unboxedMessageMap);
 
-    var typeFilter = pull.filter(msg => !msg.sync && msg.value.content.type === chatMessageType);
+    var typeFilter = pull.filter(msg => {
+      return !msg.sync && msg.value.content.type === chatMessageType
+    });
 
     return pull(linksFromRootMessage, pull(unboxedMessagesThrough, typeFilter));
   }
@@ -62,7 +68,7 @@ module.exports = (sbot, config) => {
         var messageText = e.srcElement.value;
 
         if (messageText.length > 0) {
-          e.srcElement.value="";
+          e.srcElement.value = "";
           sendMessage(messageText);
         }
 
@@ -94,6 +100,7 @@ module.exports = (sbot, config) => {
   function sendMessage(messageText) {
     var content = {
       type: chatMessageType,
+      root: rootMessageId
     };
 
     if (!recipients || recipients.length === 0) {
@@ -104,9 +111,7 @@ module.exports = (sbot, config) => {
     content[chatMessageField] = messageText;
 
     sbot.private.publish(content, recipients, (err, msg) => {
-      console.log("sending msg");
-      console.log(err);
-      console.log(msg);
+
     });
   }
 
