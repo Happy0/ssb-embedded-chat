@@ -31,34 +31,21 @@ module.exports = (sbot, config) => {
   const recipients = config.recipients;
 
   function messagesSource() {
-    var linksFromRootMessage = sbot.links({
-      dest: rootMessageId,
-      values: true,
+    var linksFromRootMessage = sbot.backlinks.read({
+      query: [{
+        $filter: {
+          dest: rootMessageId
+        }
+      }],
+      index: 'DTA', // use asserted timestamps
       live: true
     });
-
-    var encryptedMessagesOnlyThrough = pull.filter(msg => {
-      if (msg.sync) return false;
-
-      return typeof(msg.value.content) === 'string';
-    });
-
-    var unboxedMessageMap = pull.asyncMap((msg, cb) => sbot.private.unbox(msg.value.content, (err, data) => {
-      if (data) {
-        msg.value.content = data;
-        cb(null, msg);
-      } else {
-        msg.value.content = {};
-        cb(null, msg);
-      }
-    }));
-    var unboxedMessagesThrough = pull(encryptedMessagesOnlyThrough, unboxedMessageMap);
 
     var typeFilter = pull.filter(msg => {
       return !msg.sync && msg.value.content.type === chatMessageType
     });
 
-    return pull(linksFromRootMessage, pull(unboxedMessagesThrough, typeFilter));
+    return pull(linksFromRootMessage, typeFilter);
   }
 
   function renderChatMessage(msg, author) {
