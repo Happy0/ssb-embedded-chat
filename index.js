@@ -21,12 +21,15 @@ module.exports = (sbot, config) => {
 
   /* The idents of those who should be able to see the chat message and their
    * display names. Of format:
-   [
-    {
+   {
+    <ident key>: {
       "name": "display name",
-      "id": <scuttlebut ident>
+    },
+    <other ident key>: {
+      "name": "other display name"
     }
-  ]
+  }
+  }
    */
   const recipients = config.recipients;
 
