@@ -2,6 +2,8 @@ const h = require('hyperscript');
 const pull = require('pull-stream');
 const Scroller = require('pull-scroll');
 
+const getDisplayName = require('./names');
+
 // TODO: hings
 module.exports = (sbot, config) => {
 
@@ -19,19 +21,15 @@ module.exports = (sbot, config) => {
   // or not
   const chatboxEnabled = config.chatboxEnabled;
 
+  // Whether the messages sent should be encrypted and sent to users in
+  // participant array or not
+  const isPublic = config.isPublic;
+
   /* The idents of those who should be able to see the chat message and their
-   * display names. Of format:
-   {
-    <ident key>: {
-      "name": "display name",
-    },
-    <other ident key>: {
-      "name": "other display name"
-    }
-  }
+   * display names. An array of ID strings for the user ids.
   }
    */
-  const recipients = config.recipients;
+  const participants = config.participants;
 
   function messagesSource() {
     var linksFromRootMessage = sbot.backlinks.read({
@@ -48,13 +46,23 @@ module.exports = (sbot, config) => {
       return !msg.sync && msg.value.content.type === chatMessageType
     });
 
-    return pull(linksFromRootMessage, typeFilter);
+    var privateOnlyFilter = pull.filter(msg =>
+      isPublic || participants.indexOf(msg.value.author) !== -1
+    )
+
+    var filters = pull(typeFilter, privateOnlyFilter);
+
+    return pull(linksFromRootMessage, filters);
   }
 
   function renderChatMessage(msg, author) {
     return h('div', {
       className: 'ssb-embedded-chat-message'
-    }, `<${author}> ${msg}`);
+    },
+    h('span', '<'),
+    h('span', {class: 'ssb-embedded-chat-message-author'}, author),
+    h('span', '> '),
+    h('span', msg))
   }
 
   /**
@@ -96,7 +104,11 @@ module.exports = (sbot, config) => {
       messagesSource(),
       Scroller(scroller,
         content,
-        (msg) => renderChatMessage(msg.value.content[chatMessageField], recipients[msg.value.author].name), false, true));
+        (msg) =>
+        renderChatMessage(msg.value.content[chatMessageField],
+           getDisplayName(msg.value.author)),
+            false,
+             true));
 
     var chatBox = h('div', {
       className: 'ssb-embedded-chat',
@@ -114,16 +126,27 @@ module.exports = (sbot, config) => {
       root: rootMessageId
     };
 
-    if (!recipients || recipients.length === 0) {
-      console.error("Chatbox: Recipients array must be configured.")
+    if ( !isPublic && (!participants || participants.length === 0) ) {
+      console.error("Chatbox: participants array must be configured or the chat must be configured as public.")
       return;
     }
 
     content[chatMessageField] = messageText;
 
-    sbot.private.publish(content, Object.keys(recipients), (err, msg) => {
+    if (isPublic) {
+      sbot.publish(content, (err, msg) => {
+        if (err) {
+          console.log("Error publishing public chat message " + err);
+        }
 
-    });
+      })
+    } else {
+      sbot.private.publish(content, participants, (err, msg) => {
+        if (err) {
+          console.log("Error publishing private chat message " + err);
+        }
+      });
+    }
   }
 
   return {
