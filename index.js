@@ -1,6 +1,7 @@
 const h = require('hyperscript');
 const pull = require('pull-stream');
 const Scroller = require('pull-scroll');
+const NameCache = require('./name-cache');
 
 module.exports = (sbot, config) => {
 
@@ -40,6 +41,8 @@ module.exports = (sbot, config) => {
   {
     throw new Error("ssb-embedded-chat requires a getDisplayName errback which calls back with a user's display name.")
   }
+
+  const nameCache = NameCache(sbot, getDisplayName);
 
   function messagesSource() {
     var linksFromRootMessage = sbot.backlinks.read({
@@ -130,7 +133,7 @@ module.exports = (sbot, config) => {
     const message = msg.value.content[chatMessageField];
     const authorId = msg.value.author;
 
-    getDisplayName(authorId, (err, res) => cb(null, {
+    nameCache.getDisplayName(authorId, (err, res) => cb(null, {
       displayName: res,
       message
     }));
