@@ -2,6 +2,7 @@ const h = require('hyperscript');
 const pull = require('pull-stream');
 const Scroller = require('pull-scroll');
 const NameCache = require('./name-cache');
+const Abortable = require('pull-abortable');
 
 module.exports = (sbot, config) => {
 
@@ -43,6 +44,8 @@ module.exports = (sbot, config) => {
   }
 
   const nameCache = NameCache(sbot, getDisplayName);
+
+  const aborter = Abortable();
 
   function messagesSource() {
     var linksFromRootMessage = sbot.backlinks.read({
@@ -115,6 +118,7 @@ module.exports = (sbot, config) => {
 
     pull(
       messagesSource(),
+      aborter,
       pull.asyncMap(getNameAndChatMessage),
       Scroller(scroller,
         content,
@@ -172,6 +176,14 @@ module.exports = (sbot, config) => {
   }
 
   return {
-    getChatboxElement: getChatboxElement
+    getChatboxElement: getChatboxElement,
+
+    /**
+     * Ends the live message feed arriving into the chat. Does not remove the
+     * DOM element
+     */
+    destroy: () => {
+      aborter.abort()
+    }
   }
 }
