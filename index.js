@@ -2,9 +2,6 @@ const h = require('hyperscript');
 const pull = require('pull-stream');
 const Scroller = require('pull-scroll');
 
-const getDisplayName = require('./names');
-
-// TODO: hings
 module.exports = (sbot, config) => {
 
   // The root message that all the chat messages are linked back to
@@ -25,11 +22,24 @@ module.exports = (sbot, config) => {
   // participant array or not
   const isPublic = config.isPublic;
 
-  /* The idents of those who should be able to see the chat message and their
+  /*
+   * The idents of those who should be able to see the chat message and their
    * display names. An array of ID strings for the user ids.
   }
    */
   const participants = config.participants;
+
+  /**
+   * The user of this library needs to pass in a way to get the display name for a given
+   * scuttlebutt identity. This is to avoid depending on any particular plugin
+   * for indexing names, etc.
+   */
+  const getDisplayName = config.getDisplayName;
+
+  if (!getDisplayName || typeof(getDisplayName) != "function")
+  {
+    throw new Error("ssb-embedded-chat requires a getDisplayName errback which calls back with a user's display name.")
+  }
 
   function messagesSource() {
     var linksFromRootMessage = sbot.backlinks.read({
@@ -102,19 +112,28 @@ module.exports = (sbot, config) => {
 
     pull(
       messagesSource(),
+      pull.asyncMap(getNameAndChatMessage),
       Scroller(scroller,
         content,
-        (msg) =>
-        renderChatMessage(msg.value.content[chatMessageField],
-           getDisplayName(msg.value.author)),
-            false,
-             true));
+        (details) =>
+        renderChatMessage(details.message, details.displayName), false, true)
+      );
 
     var chatBox = h('div', {
       className: 'ssb-embedded-chat',
     }, scroller, sendMessageBox)
 
     return chatBox;
+  }
+
+  function getNameAndChatMessage(msg, cb) {
+    const message = msg.value.content[chatMessageField];
+    const authorId = msg.value.author;
+
+    getDisplayName(authorId, (err, res) => cb(null, {
+      displayName: res,
+      message
+    }));
   }
 
   /* Send the message using the configured message type and root message.
