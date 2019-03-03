@@ -1,10 +1,16 @@
+const pullCat = require('pull-cat');
 const h = require('hyperscript');
 const pull = require('pull-stream');
 const Scroller = require('pull-scroll');
 const NameCache = require('./name-cache');
 const Abortable = require('pull-abortable');
 
+
 module.exports = (sbot, config) => {
+
+  // Optionally display some of the old messages from a previous conversation by ID.
+  // e.g. if this is a rematch from a previous game of something
+  const previousChatId = config.previousChatId;
 
   // The root message that all the chat messages are linked back to
   const rootMessageId = config.rootMessageId;
@@ -66,19 +72,36 @@ module.exports = (sbot, config) => {
       isPublic || participants.indexOf(msg.value.author) !== -1
     )
 
-    var filters = pull(typeFilter, privateOnlyFilter);
+    var previousChatMessages = !previousChatId ? pull.empty() : sbot.backlinks.read({
+      query: [{
+        $filter: {
+          dest: previousChatId
+        }
+      }],
+      index: 'DTA', // use asserted timestamps
+    })
 
-    return pull(linksFromRootMessage, filters);
+    var oldChatStream = pull(previousChatMessages, pull(typeFilter, privateOnlyFilter), pull.map(msg => {
+      msg.isOld = true;
+      return msg;
+    }))
+
+
+    var newChatStream = pull(linksFromRootMessage, pull(typeFilter, privateOnlyFilter));
+
+    return pullCat([oldChatStream, newChatStream]);
   }
 
-  function renderChatMessage(msg, author) {
+  function renderChatMessage(msg, author, isOld) {
+    var containerClass = isOld ? 'ssb-embedded-chat-message ssb-embedded-chat-message-old' : 'ssb-embedded-chat-message'
+
     return h('div', {
-      className: 'ssb-embedded-chat-message'
+      className: containerClass
     },
     h('span', '<'),
-    h('span', {class: 'ssb-embedded-chat-message-author'}, author),
+    h('span', {className: 'ssb-embedded-chat-message-author'}, author),
     h('span', '> '),
-    h('span', msg))
+    h('span', { className: 'ssb-embedded-chat-message-text' },  msg))
   }
 
   /**
@@ -123,7 +146,7 @@ module.exports = (sbot, config) => {
       Scroller(scroller,
         content,
         (details) =>
-        renderChatMessage(details.message, details.displayName), false, true)
+        renderChatMessage(details.message, details.displayName, details.isOld), false, true)
       );
 
     var chatBox = h('div', {
@@ -139,7 +162,8 @@ module.exports = (sbot, config) => {
 
     nameCache.getDisplayName(authorId, (err, res) => cb(null, {
       displayName: res,
-      message
+      message,
+      isOld: msg.isOld
     }));
   }
 
