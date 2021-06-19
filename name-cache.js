@@ -1,5 +1,4 @@
 const pull = require('pull-stream');
-const get = require('lodash/get');
 
 const nameCache = {
 
@@ -7,24 +6,17 @@ const nameCache = {
 
 let cacheClearerInitialised = false;
 
-module.exports = (sbot, getDisplayNameCb) => {
+module.exports = (aboutSelfChangeStream, getDisplayNameCb) => {
 
   function clearCacheEntriesOnNewName() {
-    const aboutTypeStream = sbot.messagesByType({
-      type: "about",
-      live: true,
-      gte: Date.now() - 60000
-    })
+    const aboutTypeStream = aboutSelfChangeStream(Date.now() - 60000);
 
-    pull(aboutTypeStream, pull.drain(msg => {
-      let about = get(msg, 'value.content.about');
+    pull(aboutTypeStream, pull.drain(about => {
 
       if (about && nameCache[about]) {
         delete nameCache[about];
       }
-
     }))
-
   }
 
   if (!cacheClearerInitialised) {

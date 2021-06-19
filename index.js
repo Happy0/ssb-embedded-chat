@@ -5,18 +5,29 @@ const Scroller = require('pull-scroll');
 const NameCache = require('./name-cache');
 const Abortable = require('pull-abortable');
 
+module.exports = (config) => {
 
-module.exports = (sbot, config) => {
+  // A function to get the stream of chat messages by ID (getChatStream(id, live))).
+  // Stream should not have other messages types
+  const getChatStream = config.getChatStream
 
   // Optionally display some of the old messages from a previous conversation by ID.
   // e.g. if this is a rematch from a previous game of something
   const previousChatId = config.previousChatId;
 
+  // publishPublic(content, cb)
+  const publishPublic = config.publishPublic
+
+  // publishPrivate(content, participants, cb) 
+  const publishPrivate = config.publishPrivate
+
+  // A stream of user IDs who have changed their name (aboutSelfChangeStream(since))
+  const aboutSelfChangeStream = config.aboutSelfChangeStream
+
   // The root message that all the chat messages are linked back to
   const rootMessageId = config.rootMessageId;
 
-  // The chat root message type to identify chat messages that are linked
-  // to the root and send chat messages
+  // The 'type' field value that chat messages have to send chat messages with
   const chatMessageType = config.chatMessageType;
 
   // The field name of the JSON key containing the message text.
@@ -49,20 +60,12 @@ module.exports = (sbot, config) => {
     throw new Error("ssb-embedded-chat requires a getDisplayName errback which calls back with a user's display name.")
   }
 
-  const nameCache = NameCache(sbot, getDisplayName);
+  const nameCache = NameCache(aboutSelfChangeStream, getDisplayName);
 
   const aborter = Abortable();
 
   function messagesSource() {
-    var linksFromRootMessage = sbot.backlinks.read({
-      query: [{
-        $filter: {
-          dest: rootMessageId
-        }
-      }],
-      index: 'DTA', // use asserted timestamps
-      live: true
-    });
+    var linksFromRootMessage = getChatStream(rootMessageId, true);
 
     var typeFilter = pull.filter(msg => {
       return !msg.sync && msg.value.content.type === chatMessageType
@@ -72,14 +75,7 @@ module.exports = (sbot, config) => {
       isPublic || participants.indexOf(msg.value.author) !== -1
     )
 
-    var previousChatMessages = !previousChatId ? pull.empty() : sbot.backlinks.read({
-      query: [{
-        $filter: {
-          dest: previousChatId
-        }
-      }],
-      index: 'DTA', // use asserted timestamps
-    })
+    var previousChatMessages = !previousChatId ? pull.empty() : getChatStream(previousChatId, false);
 
     var oldChatStream = pull(previousChatMessages, pull(typeFilter, privateOnlyFilter), pull.map(msg => {
       msg.isOld = true;
@@ -184,14 +180,14 @@ module.exports = (sbot, config) => {
     content[chatMessageField] = messageText;
 
     if (isPublic) {
-      sbot.publish(content, (err, msg) => {
+      publishPublic(content, (err, msg) => {
         if (err) {
           console.log("Error publishing public chat message " + err);
         }
 
       })
     } else {
-      sbot.private.publish(content, participants, (err, msg) => {
+      publishPrivate(content, participants, (err, msg) => {
         if (err) {
           console.log("Error publishing private chat message " + err);
         }
