@@ -83,7 +83,7 @@ module.exports = (config) => {
     }))
 
 
-    var newChatStream = pull(linksFromRootMessage, pull(typeFilter, privateOnlyFilter));
+    var newChatStream = pull(linksFromRootMessage, typeFilter, privateOnlyFilter);
 
     return pullCat([oldChatStream, newChatStream]);
   }
